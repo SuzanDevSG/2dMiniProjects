@@ -32,15 +32,15 @@ public class AiController : MonoBehaviour
 
     private IEnumerator Play()
     {
+        List<CellController> unmarkedCells = GridManager.Instance.GetAllUnMarkedCells();
+        if (unmarkedCells.Count == 0) yield break;
+        Debug.Log("Getting Best Move");
+
         yield return new WaitForSeconds(0.5f);
 
-        List<CellController> unmarkedCells = GridManager.Instance.GetAllUnMarkedCells();
+        CellController chosenCell = MiniMaxAI.Instance.GetBestMove(unmarkedCells);
 
-        if (unmarkedCells.Count == 0) yield break;
 
-        //CellController chosenCell = unmarkedCells[Random.Range(0, unmarkedCells.Count)];
-
-        CellController chosenCell = HeuristicAi.Instance.GetBestMove(unmarkedCells);
         chosenCell.CellClicked();
     }
 }

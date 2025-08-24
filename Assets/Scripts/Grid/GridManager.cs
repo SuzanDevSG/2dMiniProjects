@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,9 +8,10 @@ public class GridManager : MonoBehaviour
     public static GridManager Instance { get; private set; }
     [SerializeField] private GameObject cell;
     [SerializeField] private RectTransform gridParent;
-
     [SerializeField] private int gridSize = 3;
     [SerializeField] private CellController[,] cellController;
+
+    public event Action<PlayerType> OnGameCompleted;
 
     private void Awake()
     {
@@ -26,6 +28,14 @@ public class GridManager : MonoBehaviour
         GenerateGrid(gridSize);
         TurnManager.Instance.SetGridSize(gridSize);
         WinChecker.Instance.SetGridCells(cellController, gridSize);
+        HeuristicAi.Instance.SetValues(gridSize, WinChecker.Instance.GetWinCount(gridSize), cellController);
+        MiniMaxAI.Instance.SetValues(cellController);
+
+    }
+
+    public void RaiseOnGameComplete(PlayerType currentPlayer)
+    {
+        OnGameCompleted?.Invoke(currentPlayer);
     }
     private void GenerateGrid(int size)
     {
@@ -38,7 +48,7 @@ public class GridManager : MonoBehaviour
         //attributes for the grid
         GridLayoutGroup layout = gridParent.GetComponent<GridLayoutGroup>();
         float totalGridSize = gridParent.rect.width;
-        float cellSize = totalGridSize / size;
+        float cellSize = (totalGridSize / size) ;
 
         // Format the grid for the cells
         layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;

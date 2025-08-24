@@ -1,7 +1,3 @@
-using JetBrains.Annotations;
-using System;
-using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 public class HeuristicAi : MonoBehaviour
 {
@@ -26,48 +22,31 @@ public class HeuristicAi : MonoBehaviour
         winCount = count;
         gridCells = cells;
     }
-
-    public CellController GetBestMove(List<CellController> cells)
+    public int CellEvaluation(CellController cell)
     {
-        CellController bestCell = null;
-        int bestScore = int.MinValue;
-
-        foreach (CellController cell in cells)
-        {
-            int score = CellEvaluation(cell);
-            Debug.Log($"cell[{cell.row} , {cell.col}] : {score}");
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestCell = cell;
-            }
-        }
-        return bestCell;
-    }
-
-    private int CellEvaluation(CellController cell)
-    {
-        int score = 0;
-
         int row = cell.row;
         int col = cell.col;
 
-        score += CheckStreak(PlayerType.O, row, col) * 25;
-        score += CheckStreak(PlayerType.X, row, col) * 20;
+        cell.SetTemporaryMark(PlayerType.O);
+        int aiRow = CheckRowStreak(PlayerType.O, row, col);
+        int aiCol = CheckColStreak(PlayerType.O, row, col);
+        int aiDiag = CheckDiagonalStreak(PlayerType.O, row, col);
+        int aiAnti = CheckAntiDiagonalStreak(PlayerType.O, row, col);
+        cell.ClearMark();
 
-        score += DetectFork(PlayerType.O, row, col);
-        score += DetectFork(PlayerType.X, row, col);
+        cell.SetTemporaryMark(PlayerType.X);
+        int opRow = CheckRowStreak(PlayerType.X, row, col);
+        int opCol = CheckColStreak(PlayerType.X, row, col);
+        int opDiag = CheckDiagonalStreak(PlayerType.X, row, col);
+        int opAnti = CheckAntiDiagonalStreak(PlayerType.X, row, col);
+        cell.ClearMark();
 
+        int aiScore = Mathf.Max(aiRow, aiCol, aiDiag, aiAnti);
+        int opScore = Mathf.Max(opRow, opCol, opDiag, opAnti);
+        int score = aiScore - opScore;
 
-
-        if (IsCenter(row, col))
-        {
-            score += 20;
-        }
-        if (IsCorner(row, col))
-        {
-            score += 15;
-        }
+        if (IsCenter(row, col)) score += 2;
+        if (IsCorner(row, col)) score += 1;
         return score;
     }
     private bool IsCenter(int row, int col)
@@ -86,35 +65,6 @@ public class HeuristicAi : MonoBehaviour
     {
         return (row == 0 || row == gridSize - 1) && (col == 0 || col == gridSize - 1);
     }
-    private int CheckStreak(PlayerType player, int row, int col)
-    {
-        int score = 0;
-
-        int rowScore = CheckRowStreak(player, row, col);
-
-        Debug.Log("RowScore : " + rowScore);
-
-        int colScore = CheckColStreak(player, row, col);
-        Debug.Log("ColScore : " + colScore);
-
-        int diagScore = CheckDiagonalStreak(player, row, col);
-        Debug.Log("DiagScore : " + diagScore);
-
-        int antiDragScore = CheckAntiDiagonalStreak(player, row, col);
-        Debug.Log("AntiDragScore : " + antiDragScore);
-
-        score += rowScore + colScore + diagScore + antiDragScore;
-        //score += CheckDirection(player, row, col, 1, 0);
-        //score += CheckDirection(player, row, col, -1, 0);
-        //score += CheckDirection(player, row, col, 0, 1);
-        //score += CheckDirection(player, row, col, 0, -1);
-        //score += CheckDirection(player, row, col, 1, 1);
-        //score += CheckDirection(player, row, col, -1, -1);
-        //score += CheckDirection(player, row, col, -1, +1);
-        //score += CheckDirection(player, row, col, +1, -1);
-
-        return score;
-    }
 
     private int CheckAntiDiagonalStreak(PlayerType player, int row, int col)
     {
@@ -122,7 +72,7 @@ public class HeuristicAi : MonoBehaviour
 
         for (int i = 1; (row - i >= 0 && col + i < gridSize); i++)
         {
-            if (gridCells[row - 1, col + 1].IsMarkedBy(player))
+            if (gridCells[row - i, col + i].IsMarkedBy(player))
             {
                 streak++;
             }
@@ -137,9 +87,9 @@ public class HeuristicAi : MonoBehaviour
             }
             else break;
         }
-        if (streak >= 3) return 6;
-        if (streak == 2) return 2;
-        if (streak == 1) return 1;
+        if (streak >= winCount) return 10;
+        if (streak == winCount - 1) return 5;
+        if (streak == winCount - 2) return 1;
         return 0;
     }
 
@@ -150,14 +100,14 @@ public class HeuristicAi : MonoBehaviour
         // forward streak
         for (int i = 1; (row + i < gridSize && col + i < gridSize); i++)
         {
-            if (gridCells[row + 1, col + i].IsMarkedBy(player))
+            if (gridCells[row + i, col + i].IsMarkedBy(player))
             {
                 streak++;
             }
             else break;
         }
         // backward streak
-        for (int i = 1; (col - i >= 0 && row + i >= 0); i++)
+        for (int i = 1; (col - i >= 0 && row - i >= 0); i++)
         {
             if (gridCells[row - i, col - i].IsMarkedBy(player))
             {
@@ -165,13 +115,13 @@ public class HeuristicAi : MonoBehaviour
             }
             else break;
         }
-        if (streak >= 3) return 6;
-        if (streak == 2) return 2;
-        if (streak == 1) return 1;
+        if (streak >= winCount) return 10;
+        if (streak == winCount - 1) return 5;
+        if (streak == winCount - 2) return 1;
         return 0;
     }
 
-    private int CheckColStreak(PlayerType player, int row, int col)
+    private int CheckRowStreak(PlayerType player, int row, int col)
     {
         int streak = 1;
         for (int c = col - 1; c >= 0; c--)
@@ -190,13 +140,13 @@ public class HeuristicAi : MonoBehaviour
             }
             else break;
         }
-        if (streak >= 3) return 6;
-        if (streak == 2) return 2;
-        if (streak == 1) return 1;
+        if (streak >= winCount) return 10;
+        if (streak == winCount - 1) return 5;
+        if (streak == winCount - 2) return 1;
         return 0;
     }
 
-    private int CheckRowStreak(PlayerType player, int row, int col)
+    private int CheckColStreak(PlayerType player, int row, int col)
     {
         int streak = 1;
         for (int r = row - 1; r >= 0; r--)
@@ -215,63 +165,23 @@ public class HeuristicAi : MonoBehaviour
             }
             else break;
         }
-        if (streak >= 3) return 6;
-        if (streak == 2) return 2;
-        if (streak == 1) return 1;
+        if (streak >= winCount) return 10;
+        if (streak == winCount - 1) return 5;
+        if (streak == winCount - 2) return 1;
         return 0;
 
     }
 
-    private int DetectFork(PlayerType player, int row, int col)
+    public int BoardEvaluation()
     {
-        int threats = 0;
-
-        if ((CheckDirection(player, row, col, 0, 1) + CheckDirection(player, row, col, 0, -1) >= 2))
+        int totalScore = 0;
+        foreach (var cell in gridCells)
         {
-            threats++;
-        }
-        if ((CheckDirection(player, row, col, 1, 0) + CheckDirection(player, row, col, -1, 0)) >= 2)
-        {
-            threats++;
-        }
-        if ((CheckDirection(player, row, col, 1, 1) + CheckDirection(player, row, col, -1, -1) >= 2))
-        {
-            threats++;
-        }
-        if ((CheckDirection(player, row, col, 1, -1) + CheckDirection(player, row, col, -1, 1) >= 2))
-        {
-            threats++;
-        }
-
-        if (threats >= 2)
-        {
-            return 100;
-        }
-        return 0;
-    }
-    private int CheckDirection(PlayerType player, int row, int col, int rowStep, int colStep)
-    {
-        int streak = 0;
-
-        for (int i = 1; i < winCount; i++)
-        {
-            int r = row + i * rowStep;
-            int c = col + i * colStep;
-
-            if (r < 0 || c < 0 || r >= gridSize || c >= gridSize) break;
-
-            if (gridCells[r, c].IsMarkedBy(player))
+            if (!cell.IsMarked)
             {
-                streak++;
+                totalScore += CellEvaluation(cell);
             }
-            //else
-            //{
-            //    break;
-            //}
         }
-        if (streak >= 3) return 150;
-        if (streak == 2) return 50;
-        if (streak == 1) return 10;
-        return 0;
+        return totalScore;
     }
 }
