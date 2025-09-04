@@ -1,5 +1,5 @@
 using UnityEngine;
-public enum PlayerType { X, O }
+public enum PlayerType { None, X, O }
 public class TurnManager : MonoBehaviour
 {
     public static TurnManager Instance { get; private set; }

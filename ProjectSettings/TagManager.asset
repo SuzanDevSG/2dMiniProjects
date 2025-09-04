@@ -41,3 +41,9 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: ParticleSystem
+    uniqueID: 3110412963
+    locked: 0
+  - name: Cell
+    uniqueID: 1229946335
+    locked: 0
