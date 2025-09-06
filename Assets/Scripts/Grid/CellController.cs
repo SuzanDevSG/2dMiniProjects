@@ -45,6 +45,8 @@ public class CellController : MonoBehaviour
     }
     public void CellClicked()
     {
+        // Prevent player input if AI is thinking
+        if (AiController.IsAiThinking) return;
         // check if it is already clicked
         if (IsMarked) return;
 

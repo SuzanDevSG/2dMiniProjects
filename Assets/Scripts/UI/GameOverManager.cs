@@ -32,7 +32,6 @@ public class GameOverManager : MonoBehaviour
         yield return new WaitForSeconds(1f);
         // Show the game over panel and set the result text
         gameOverPanel.SetActive(true);
-        AiController.Instance.StopAiCorutine();
         if (currentPlayer == PlayerType.None)
         {
             resultText.text = "Draw :(";

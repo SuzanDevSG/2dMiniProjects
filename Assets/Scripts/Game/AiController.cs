@@ -1,10 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading.Tasks; // Add for Task
+using System;
 
 public class AiController : MonoBehaviour
 {
     public static AiController Instance { get; private set; }
+    public static bool IsAiThinking { get; private set; } // Add flag
     private Coroutine AiPlay;
 
     private void Awake()
@@ -19,28 +22,27 @@ public class AiController : MonoBehaviour
 
     public void AiTurn()
     {
-        AiPlay = StartCoroutine(Play());
-    }
-    public void StopAiCorutine()
-    {
-        if (AiPlay != null)
-        {
-            StopCoroutine(AiPlay);
-            AiPlay = null;
-        }
+        // Start async AI move
+        PlayAsync();
     }
 
-    private IEnumerator Play()
+    private async void PlayAsync()
     {
         List<CellController> unmarkedCells = GridManager.Instance.GetAllUnMarkedCells();
-        if (unmarkedCells.Count == 0) yield break;
+        if (unmarkedCells.Count == 0) return;
         Debug.Log("Getting Best Move");
 
-        yield return new WaitForSeconds(0.5f);
+        IsAiThinking = true; // Block player input
+        await Task.Delay(500); // Wait for 0.5s
 
-        CellController chosenCell = MiniMaxAI.Instance.GetBestMove(unmarkedCells);
+        // Run minimax in background
+        CellController chosenCell = await Task.Run(() => MiniMaxAI.Instance.GetBestMove(unmarkedCells));
 
-
-        chosenCell.CellClicked();
+        IsAiThinking = false; // Allow player input
+        // Apply move on main thread
+        if (chosenCell != null)
+        {
+            chosenCell.CellClicked();
+        }
     }
 }

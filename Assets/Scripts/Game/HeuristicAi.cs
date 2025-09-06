@@ -45,7 +45,7 @@ public class HeuristicAi : MonoBehaviour
         int opScore = Mathf.Max(opRow, opCol, opDiag, opAnti);
         int score = aiScore - opScore;
 
-        if (IsCenter(row, col)) score += 2;
+        if (IsCenter(row, col)) score += 10; // Strongly prefer center
         if (IsCorner(row, col)) score += 1;
         return score;
     }
